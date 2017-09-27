@@ -1,0 +1,12 @@
+{
+    "name": "softspring/aeb-sepa-bundle",
+    "description": "AEB SEPA files management bundle",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Softspring\\AebSepaBundle\\": ""
+        }
+    }
+}
