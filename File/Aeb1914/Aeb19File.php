@@ -10,7 +10,7 @@ use Softspring\AebSepaBundle\File\Aeb1914\Register\GeneralTotal;
 use Softspring\AebSepaBundle\File\Aeb1914\Register\PresenterHeader;
 use Symfony\Component\Validator\Constraints as Assert;
 
-class Aeb1914File extends AbstractAebFile implements RegistersTotalizerInterface, TotalPopulatorInterface
+class Aeb19File extends AbstractAebFile implements RegistersTotalizerInterface, TotalPopulatorInterface
 {
     /**
      * @var PresenterHeader
@@ -29,6 +29,20 @@ class Aeb1914File extends AbstractAebFile implements RegistersTotalizerInterface
      * @Assert\Valid()
      */
     public $generalTotal;
+
+    /**
+     * @var bool
+     */
+    protected $aeb1915Reduced = false;
+
+    /**
+     * Basic scheme or reduced deadline for submission
+     * @param bool $aeb1915Reduced
+     */
+    public function setAeb1915Reduced($aeb1915Reduced = true)
+    {
+        $this->aeb1915Reduced = $aeb1915Reduced;
+    }
 
     /**
      * @inheritdoc
@@ -58,20 +72,34 @@ class Aeb1914File extends AbstractAebFile implements RegistersTotalizerInterface
             $creditorRegister->populateTotalRegister();
         }
 
-        $this->generalTotal->registersNumber = $this->countRegisters();
+        $this->generalTotal->registersNumber = $this->countDebtRegisters();
         $this->generalTotal->totalImports = $this->totalImport();
-        $this->generalTotal->registersTotalNumber = $this->countRegisters(true);
+        $this->generalTotal->registersTotalNumber = $this->countRegisters();
     }
 
     /**
      * @inheritdoc
      */
-    public function countRegisters($withTotal = false)
+    public function countRegisters()
     {
-        $registers = $withTotal ? 2 : 1;
+        $registers = 2;
 
         foreach ($this->creditorRegisters as $creditorRegister) {
             $registers += $creditorRegister->countRegisters();
+        }
+
+        return $registers;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function countDebtRegisters()
+    {
+        $registers = 0;
+
+        foreach ($this->creditorRegisters as $creditorRegister) {
+            $registers += $creditorRegister->total->debtsNumber;
         }
 
         return $registers;
@@ -96,9 +124,19 @@ class Aeb1914File extends AbstractAebFile implements RegistersTotalizerInterface
      */
     public function convertValues()
     {
+        $aebBookVersion = $this->aeb1915Reduced ? '19154' : '19143';
+
+        $this->presenterHeader->aebBookVersion = $aebBookVersion;
         $this->presenterHeader->convertValues();
 
         foreach ($this->creditorRegisters as $creditorRegister) {
+            foreach ($creditorRegister->registers as $register) {
+                $register->header->aebBookVersion = $aebBookVersion;
+                foreach ($register->debts as $debt) {
+                    $debt->required1->aebBookVersion = $aebBookVersion;
+                }
+            }
+
             $creditorRegister->convertValues();
         }
 

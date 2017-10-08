@@ -25,7 +25,7 @@ class PresenterHeader implements RegisterInterface
      * @Assert\Length(max="5")
      * @Assert\Type(type="digit")
      */
-    protected $aebBookVersion = '19143';
+    public $aebBookVersion = '19143';
 
     /**
      * Número de dato
